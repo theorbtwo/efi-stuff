@@ -1,5 +1,5 @@
 This is the beginning of a set of utilities to take images of EFI
-ROMs, split them apart, and extract their jucy and delicious innards.
+ROM, split them apart, and extract their juicy and delicious innards.
 
 To start, get an image of your ROM.  On non-laptop UNIX-like machines,
 this is probably best accomplished with the "flashrom" command.  If
@@ -19,12 +19,10 @@ Right.  Now that we've got the rom image to slice up, you should be
 able to run ```perl slice-dump.pl your.rom >slice.log 2>&1```.  This
 will create a slice.log file with a bunch of fairly low-level
 information about how your ROM is structured, and creates a whole slew
-of files in the same directory as your.rom.  Most of these files will
-have, in effect, two extensions -- one that tells you what this
-paticular efi "file" is, and another to tell you the type of this
-paticular "section" of the "file".  (EFI files are, in a way, more
-like directories then single files -- they have multiple
-parts/streams.)
+of directories in the same directory as your.rom.  You will end up
+with, mostly, Name.type/part, where each directory is a "file" within
+a efi firmware volume, and each file in that directory is an efi
+"section".  We'll discuss the different sorts of section next.
 
 ```.pe32``` sections are the executables of the efi world.  In fact,
 they use the same PE format as windows .exe files -- you can rename
@@ -33,25 +31,28 @@ actually just execute under windows -- that'd be way too easy.  (Note
 that they are called .pe32 files, even if they are compiled for 64-bit
 systems.  The file format is still called pe32.)
 
-```.{97e409e6-4cc1-11d9-81f6-000000000000}``` files, at least on
-systems with MSI BIOSes, store Internal Forms Representation info --
-that is, they tell you what the system's config menus are structured.
-You can run read-97-text.pl on these files to dump them.
-
 ```.user_interface``` files give you a human-readable name for the
-decidedly unreadable GUIDs at the beginning of most files.  I will
-hopefully integrate using these into slice-dump.pl soon...
+decidedly unreadable GUIDs that serve as filenames for EFI firmware
+volume files.  If everything works properly, your files will already
+have been named on disk for this human-readable name, where it exists.
 
-```.raw``` files are things that we can't figure out a better name for
-and intermediate "whole-file" dumps.  (I'll probably stop dumping the
-whole-file ones soonish, or at least make the two categories have
-different names.)
+```.raw``` files are things that we can't figure out a better name for.
 
 ```.dxe_depex```, ```.pei_depex```, and ```.smm_depex``` files give
 information about what depends on what, and thus what order things
 should be run in.  I don't yet have a tool for dumping them, sorry.
 (The three variants depend on what phase of execution and sort of
 thingy they are dependencies for.  More on that in a moment.)
+
+Those are all the section types directly defined in the UEFI spec, or at least all the ones I've actually seen.  (There are several that I haven't.)
+
+There's also, however, an extension mechanism for types that OEMs and
+Independent BIOS Vendors want to add, called freeform subtype guids.
+
+```.{97e409e6-4cc1-11d9-81f6-000000000000}``` files, at least on
+systems with MSI BIOSes, store Internal Forms Representation info --
+that is, they tell you what the system's config menus are structured.
+You can run read-97-text.pl on these files to dump them.
 
 On a EFI / PI system, there are several phases of boot (note that the
 PI phases are optional from the point of view of EFI -- that is, a
@@ -68,7 +69,7 @@ SEC is to make sure all code that runs after it is authenticated.)
 You should be able to find the SEC in what is technically called the
 "Volume Top File" at the end of the ROM.  (PI spec, volume 2, section
 3.2.2) It will end up in
-```your.rom-{1ba0062e-c779-4582-8566-336ae8f78f09}.freeform.raw```.
+```your.rom-{1ba0062e-c779-4582-8566-336ae8f78f09}.freeform.raw``` .
 (Or possibly not ".freeform.", it's unclear to me if it has to be a
 freeform file.)
 
