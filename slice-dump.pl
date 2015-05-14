@@ -395,12 +395,12 @@ while ($rom =~ m/(\x78\xe5\x8c\x8c\x3d\x8a\x1c\x4f\x99\x35\x89\x61\x85\xc3\x2d\x
     #   }
     # }
 
-    # Raw files, by definition, have no section headers.
     if ($file_header->{Type} eq 'pad') {
       # File claims to be padding.  We should possibly check if that's really all that it is...
       next;
     }
     
+    # Raw files, by definition, have no section headers.
     if ($file_header->{Type} eq 'raw') {
       my $raw_offset = tell($infh);
       my $size = $file_header->{Size};
@@ -566,6 +566,7 @@ sub do_sections {
       my $name = Binary::MakeType::make_counted_string(sub {$header->{Size} - ($postheader_pos - $section_header_start)})->($infh);
       # The .user_interface file gets output with the raw data in it.
       print $outfh $name;
+      close $outfh;
       {
         local $/="\0";
         $name = decode('utf16le', $name);
@@ -573,6 +574,15 @@ sub do_sections {
       }
       my $old_dirname = $out_filename->dir;
       my $new_dirname = "$infn-$name.".$file_header->{Type};
+      if (-e $new_dirname) {
+        my $n=0;
+        while (-e "$new_dirname-$n") {
+          $n++;
+        }
+        $new_dirname = "$new_dirname-$n";
+      }
+
+      print "$old_dirname --> $new_dirname\n";
       rename $old_dirname, $new_dirname or die "Can't rename $old_dirname to $new_dirname: $!";
     } else {
       my $out_filename = file("$infn-".$file_header->{Name}.".".$file_header->{Type}."/".$header->{Type});
