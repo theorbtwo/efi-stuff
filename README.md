@@ -44,15 +44,21 @@ should be run in.  I don't yet have a tool for dumping them, sorry.
 (The three variants depend on what phase of execution and sort of
 thingy they are dependencies for.  More on that in a moment.)
 
-Those are all the section types directly defined in the UEFI spec, or at least all the ones I've actually seen.  (There are several that I haven't.)
+Those are all the section types directly defined in the UEFI spec, or
+at least all the ones I've actually seen.  (There are several that I
+haven't.)
 
 There's also, however, an extension mechanism for types that OEMs and
-Independent BIOS Vendors want to add, called freeform subtype guids.
+Independent BIOS Vendors want to add, called freeform subtype GUIDs.
 
 ```.{97e409e6-4cc1-11d9-81f6-000000000000}``` files, at least on
 systems with MSI BIOSes, store Internal Forms Representation info --
 that is, they tell you what the system's config menus are structured.
 You can run read-97-text.pl on these files to dump them.
+
+There's several other GUID subtypes I've seen, but I've no real
+information about what they are for, so I'm not going to name them
+here.
 
 On a EFI / PI system, there are several phases of boot (note that the
 PI phases are optional from the point of view of EFI -- that is, a

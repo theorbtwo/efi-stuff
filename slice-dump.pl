@@ -2,7 +2,7 @@
 # -*- cperl -*-
 use strictures 1;
 use 5.12.0;
-use lib '/mnt/shared/projects/games/talos/lib/';
+use lib '.';
 use Binary::MakeType;
 use Data::Printer colored => 1, output => 'stdout', return_value => 'pass';
 use Scalar::Util 'looks_like_number';
@@ -133,7 +133,15 @@ my $guid = sub {
 #                 vv--- this is the problem.  0x0A = \n, . = anything but \n, unless /s.
 #0076_0020  00 00 0a 00 00 00 00 00  5f 46 56 48 ff fe 03 00  |........_FVH....|
 
-while ($rom =~ m/(\x78\xe5\x8c\x8c\x3d\x8a\x1c\x4f\x99\x35\x89\x61\x85\xc3\x2d\xd3)........_FVH/gs) {
+# From MBA61_0099_B12_LOCKED.scap:
+#00000050  70 43 80 53 00 00 00 00  88 ce 09 8b 20 4f 80 00  |pC.S........ O..|
+#00000060  d9 54 93 7a 68 04 4a 44  81 ce 0b f6 17 d8 90 df  |.T.zh.JD........|
+#00000070  00 00 81 00 00 00 00 00  5f 46 56 48 ff 8e ff ff  |........_FVH....|
+#00000080  48 00 90 0b 00 00 00 01  81 00 00 00 00 00 01 00  |H...............|
+#00000090  00 00 00 00 00 00 00 00  4a 25 1f 78 57 c4 13 5d  |........J%.xW..]|
+
+
+while ($rom =~ m/(\x78\xe5\x8c\x8c\x3d\x8a\x1c\x4f\x99\x35\x89\x61\x85\xc3\x2d\xd3|\xd9\x54\x93\x7a\x68\x04\x4a\x44\x81\xce\x0b\xf6\x17\xd8\x90\xdf)........_FVH/gs) {
   my $pos = pos($rom) - 44;
   seek($infh, $pos, 0);
   say "NEW VOLUME";
@@ -544,7 +552,7 @@ sub do_sections {
         do_sections($new_file_header, $decompressed_infh, $sections);
         unlink $out_filename;
       } else {
-        die "Compression type $comp_header->{CompressionType} not handled\n";
+        print "PERSONAL FAILURE: Compression type $comp_header->{CompressionType} not handled\n";
       }
     } elsif ($header->{Type} eq 'user_interface') {
       my $out_filename = file("$infn-".$file_header->{Name}.".".$file_header->{Type}."/".$header->{Type});
