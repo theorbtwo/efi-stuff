@@ -284,116 +284,6 @@ while ($rom =~ m/(\x78\xe5\x8c\x8c\x3d\x8a\x1c\x4f\x99\x35\x89\x61\x85\xc3\x2d\x
     }
     $nextpos_file = $file_header_start + $file_header->{Size};
 
-    # if ($file_header->{Type} eq 'raw' and $file_header->{Name} eq '{cef5b9a3-476d-497f-9fdc-e98143e0422c}') {
-    #   while (1) {
-    #     # AMI-style EFI variables.
-    #     my $var_header_start = tell($infh);
-    #     last if ($var_header_start >= $file_header_start + $file_header->{Size});
-    #     say "offset within file: ", $var_header_start - $file_header_start;
-    #     say "file size: ", $file_header->{Size};
-    #     my $var_header = Binary::MakeType::make_struct_array([
-    #                                                           magic => Binary::MakeType::make_constant_string('NVAR'),
-    #                                                           size => $uint16,
-    #                                                           next => $uint24,
-    #                                                           attributes => Binary::MakeType::make_bitmask($uint8,
-    #                                                                                                        {
-    #                                                                                                         1 => 'runtime_access',
-    #                                                                                                         2 => 'desc_ascii',
-    #                                                                                                         4 => 'guid',
-    #                                                                                                         8 => 'data',
-    #                                                                                                         0x10 => 'exthdr',
-    #                                                                                                         0x40 => 'authwr',
-    #                                                                                                         0x20 => 'hardware_error_record',
-    #                                                                                                         0x80 => 'valid',
-    #                                                                                                        }),
-    #                                                           # GUID, if attributes guid.
-    #                                                           # GUID index, if !attributes guid.
-    #                                                          ])->($infh);
-        
-    #     # https://github.com/chipsec/chipsec/blob/master/source/tool/chipsec/hal/uefi_platform.py
-    #     if (!$var_header->{size}) {
-    #       say "Bollocks, didn't get expected magic";
-    #       system('hd', -n => $file_header->{Size} - ($var_header_start - $file_header_start), -s => $var_header_start, $infn);
-    #       last;
-    #     }
-    #     if ($var_header->{attributes}{guid}) {
-    #       $var_header->{guid} = $guid->($infh);
-    #     } else {
-    #       my $guid_index  = $uint8->($infh);
-    #       my $saved_pos = tell($infh);
-    #       my $computed_pos = $file_header_start + $file_header->{Size} - 16*($guid_index+1);
-    #       seek($infh, $computed_pos, 0);
-    #       $var_header->{guid} = $guid->($infh);
-    #       seek($infh, $saved_pos, 0);
-    #     }
-    #     if ($var_header->{attributes}{desc_ascii}) {
-    #       $var_header->{desc} = Binary::MakeType::make_encoded_string('utf8')->($infh);
-    #     }
-    #     my $expected_pos = $var_header_start + $var_header->{size};
-    #     my $current_pos = tell($infh);
-    #     my $offset = $expected_pos - $current_pos;
-    #     $var_header->{data_len} = $offset;
-    #     $var_header->{data} = Binary::MakeType::make_counted_string(sub {$offset})->($infh);
-
-
-    #     # Known variables are listed in UEFI spec version 2.4 section 3.2.
-    #     print "UEFI variable: ";
-    #     print $var_header->{desc}
-    #       if (defined $var_header->{desc});
-    #     print ": ";
-    #     print $var_header->{guid};
-    #     print ": ";
-    #     print $var_header->{data};
-    #     print "\n";
-    #     $variables->{$var_header->{desc} || $var_header->{guid}} = $var_header->{data};
-
-    #     if (not defined $var_header->{desc}) {
-    #       # nop
-    #     } elsif ($var_header->{desc} eq 'MonotonicCounter') {
-    #       # This isn't listed in uefi spec sec 3.2, but is presumably used to implement the GetNextMonotonicCount() function of section 7.5.2.
-    #     } elsif ($var_header->{desc} eq 'Timeout') {
-    #       printf " Boot keyboard selection timeout: %d seconds\n", unpack 's', $var_header->{data};
-    #     } elsif ($var_header->{desc} eq 'Lang') {
-    #       printf " Language: %s\n", $var_header->{data};
-    #     } elsif (grep {$var_header->{desc} eq $_} qw<ConOut ConIn ErrOut ConInDev ConOutDev ErrOutDev>) {
-    #       open my $memfh, '<', \$var_header->{data};
-    #       print $type_device_path->($memfh);
-    #     } elsif ($var_header->{desc} =~ m/^Boot([0-9A-Fa-f]{4})$/) {
-    #       # Contains an EFI_LOAD_OPTION, defined in section 3.1.3 of the main uefi spec.
-    #       open my $loadoption_fh, '<', \$var_header->{data};
-    #       my $loadoption_struct = Binary::MakeType::make_struct_array([
-    #                                                                    Attributes => $uint32,
-    #                                                                    FilePathListLength => $uint16,
-    #                                                                    Description => Binary::MakeType::make_encoded_string('utf16le'),
-    #                                                                   ]);
-    #       print "EFI_LOAD_OPTION\n";
-    #       my $option = $loadoption_struct->($loadoption_fh);
-    #       my $fpl_start = tell($loadoption_fh);
-    #       while (1) {
-    #         my $relpos = tell($loadoption_fh) - $fpl_start;
-    #         say "Rel. pos within FilePathList: $relpos";
-    #         say "Total length of FilePathList: ", $option->{FilePathListLength};
-    #         last if ($relpos >= $option->{FilePathListLength});
-    #         push @{$option->{FilePathList}}, $type_device_path->($loadoption_fh);
-    #         p $option;
-    #       }
-
-    #       # ...and then the OptionalData, which is passed on to the image as an argument.
-    #       p $option;
-    #       # FilePathList => $type_device_path, # A device path, as above.
-    #       # OptionalData => $uint32, # passed as arguments to the file?
-    #     } elsif ($var_header->{desc} eq 'BootOrder') {
-    #       # array of uint16, order of Boot#### elements.
-    #     } else {
-    #       say "Not a well-known type";
-    #     }
-    #     # if ($expected_pos != $current_pos) {
-    #     #   say "Expected position of next header: $expected_pos, current pos: $current_pos, offset: $offset";
-    #     #   seek ($infh, $expected_pos, 0);
-    #     # }
-    #     p $var_header;
-    #   }
-    # }
 
     if ($file_header->{Type} eq 'pad') {
       # File claims to be padding.  We should possibly check if that's really all that it is...
@@ -497,8 +387,47 @@ sub do_sections {
     my $postheader_pos = tell($infh);
     p $header;
     $nextpos = $section_header_start + $header->{Size};
-    
-    if ($header->{Type} eq 'freeform_subtype_guid') {
+
+    if ($header->{Type} eq 'guid_defined') {
+      my $guiddef_header = Binary::MakeType::make_struct_array([
+                                                                _header_start => sub {tell shift},
+                                                                SectionDefinitionGuid => $guid,
+                                                                # The offset, rel to the beg of the *section* header (not the guiddef header), where
+                                                                # the actual data begins
+                                                                DataOffset => $uint16,
+                                                                Attributes => Binary::MakeType::make_bitmask($uint16,
+                                                                                                             {
+                                                                                                              1 => 'processing_required',
+                                                                                                              2 => 'auth_status_valid',
+                                                                                                             }),
+                                                                _header_end => sub {tell shift},
+                                                                # GuidSpecificHeaderFields, Data
+                                                               ])->($infh);
+      my $dataoffset_abs = $header->{_header_start_pos} + $guiddef_header->{DataOffset};
+      my $gshf_length = $dataoffset_abs - tell($infh);
+      p $guiddef_header;
+      $guiddef_header->{GuidSpecificHeaderFields} = Binary::MakeType::make_counted_string(sub {$gshf_length})->($infh);
+      
+      my $data_length = $header->{_header_start_pos} + $header->{Size} - tell($infh);
+      say "In guid-defined section, gshf $gshf_length, data $data_length\n";
+      $guiddef_header->{Data} = Binary::MakeType::make_counted_string(sub {$data_length})->($infh);
+
+      my $out_filename = file("$infn-".$file_header->{Name}.".".$file_header->{Type}."/gd-".$guiddef_header->{SectionDefinitionGuid});
+      make_path($out_filename->dir, {verbose=>1});
+      open my $outfh, '>', $out_filename or die "Can't open $out_filename: $!";
+      print $outfh $guiddef_header->{Data};
+      close $outfh;
+      
+      open my $infh_gd, "<", $out_filename or die "Can't reopen $out_filename for reading: $!";
+      my $new_file_header = {%$file_header};
+      $new_file_header->{_start_pos} = 0;
+      $new_file_header->{Size} = $data_length;
+      p $new_file_header;
+      
+      do_sections($new_file_header, $infh_gd, $sections);
+      close $infh_gd;
+      
+    } elsif ($header->{Type} eq 'freeform_subtype_guid') {
       my $subtype_guid = $guid->($infh);
       print "Subtype GUID is: $subtype_guid\n";
       my $post_guid_pos = tell($infh);
@@ -510,6 +439,7 @@ sub do_sections {
       open my $outfh, '>', $out_filename or die "Can't open $out_filename: $!";
       seek $infh, $post_guid_pos, 0;
       print $outfh Binary::MakeType::make_counted_string(sub {$remaining_length})->($infh);
+
     } elsif ($header->{Type} eq 'compression') {
       my $comp_header = Binary::MakeType::make_struct_array([
                                                              _Start => sub {tell($_[0])},
@@ -525,35 +455,36 @@ sub do_sections {
       say "Size from section header: ", $header->{Size};
       say "Size of compression header: ", $header_len;
       
-      if ($comp_header->{CompressionType} == 1) {
-        open my $compressed_temp, ">", "/tmp/asdf";
-        print $compressed_temp $raw;
-        close $compressed_temp;
-        my $raw_done = `/mnt/shared/projects/motherboards/UEFITool/jmm < /tmp/asdf`;
-        die if !$raw;
-        
-        my $got_len = length($raw_done);
-        if ($comp_header->{UncompressedLength} != $got_len) {
-          die "Warning: expected uncompressed length (", $comp_header->{UncompressedLength}, ") != actual uncompressed length (", $got_len, ")";
-        }
-        
-        my $out_filename = file("$infn-".$file_header->{Name}.".".$file_header->{Type}."/uncompressed");
-        make_path($out_filename->dir, {verbose=>1});
-        open my $outfh, '>', $out_filename or die "Can't open $out_filename: $!";
-        print $outfh $raw_done;
-        close $outfh;
-        open my $decompressed_infh, '<', $out_filename or die;
-        say "Trying inside decompressed bit for more sections";
-        my $new_file_header = {%$file_header};
-        $new_file_header->{_start_pos} = 0;
-        $new_file_header->{Size} = $comp_header->{UncompressedLength};
-        p $new_file_header;
-
-        do_sections($new_file_header, $decompressed_infh, $sections);
-        unlink $out_filename;
-      } else {
-        print "PERSONAL FAILURE: Compression type $comp_header->{CompressionType} not handled\n";
+      open my $compressed_temp, ">", "/tmp/asdf";
+      print $compressed_temp $raw;
+      close $compressed_temp;
+      my $comp_type = $comp_header->{CompressionType};
+      my $raw_done = `/mnt/shared/projects/motherboards/UEFITool/jmm $comp_type < /tmp/asdf`;
+      die if !$raw;
+      
+      my $got_len = length($raw_done);
+      if ($comp_header->{UncompressedLength} != $got_len) {
+        print STDERR "Warning: expected uncompressed length (", $comp_header->{UncompressedLength}, ") != actual uncompressed length (", $got_len, ")";
       }
+
+      # 1: Keeping the uncompressed file isn't terribly useful.
+      # 2: It will be an open file inside the directory when we try to rename it, mucking things up on win32 and cifs shares.
+      my $out_filename = file('/tmp/uncompressed');
+      #my $out_filename = file("$infn-".$file_header->{Name}.".".$file_header->{Type}."/uncompressed");
+      make_path($out_filename->dir, {verbose=>1});
+      open my $outfh, '>', $out_filename or die "Can't open $out_filename: $!";
+      print $outfh $raw_done;
+      close $outfh;
+      open my $decompressed_infh, '<', $out_filename or die;
+      say "Trying inside decompressed bit for more sections";
+      my $new_file_header = {%$file_header};
+      $new_file_header->{_start_pos} = 0;
+      $new_file_header->{Size} = $comp_header->{UncompressedLength};
+      p $new_file_header;
+      
+      do_sections($new_file_header, $decompressed_infh, $sections);
+      close $decompressed_infh;
+      unlink $out_filename;
     } elsif ($header->{Type} eq 'user_interface') {
       my $out_filename = file("$infn-".$file_header->{Name}.".".$file_header->{Type}."/".$header->{Type});
       make_path($out_filename->dir,

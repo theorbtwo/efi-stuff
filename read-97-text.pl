@@ -822,7 +822,7 @@ my $hii_package = Binary::MakeType::make_struct_array([
                                                                                                      # e0-ff=>system
                                                                                                     })]);
 for my $infn (@ARGV) {
-  open my $infh, "<", $infn or die;
+  open my $infh, "<", $infn or die "Can't open $infn: $!";
   print "$infn\n";
 
   my $huh = num('u32')->($infh);
