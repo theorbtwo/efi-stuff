@@ -3,16 +3,17 @@ use strictures 1;
 use 5.12.0;
 use lib '/mnt/shared/projects/games/talos/lib/';
 use Binary::MakeType;
+use Encode 'decode';
 
-my $uint8  = Binary::MakeType::make_numeric('u8le');
-my $uint16 = Binary::MakeType::make_numeric('u16le');
+our $uint8  = Binary::MakeType::make_numeric('u8le');
+our $uint16 = Binary::MakeType::make_numeric('u16le');
 our $uint24 = sub {
   my ($infh) = @_;
   my ($a, $b, $c) = @{Binary::MakeType::make_counted_array(sub {3}, $uint8)->($infh)};
   ($c<<16) | ($b<<8) | $a;
 };
-my $uint32 = Binary::MakeType::make_numeric('u32le');
-my $uint64 = Binary::MakeType::make_numeric('u64le');
+our $uint32 = Binary::MakeType::make_numeric('u32le');
+our $uint64 = Binary::MakeType::make_numeric('u64le');
 
 our $guid = sub {
   my ($infh) = @_;
@@ -57,7 +58,9 @@ our $type_device_path = sub {
                                print "data_hex: $data_hex\n";
                                if ($guid eq '{2d6447ef-3bc9-41a0-ac19-4d51d01b4ce6}') {
                                  my $data_str = decode('utf16le', $data);
+                                 $data_str =~ s/\0$//;
                                  print "data: '$data_str'\n";
+                                 $data_hex = qq<"$data_str">;
                                }
                                return "VenHw($guid, $data_hex)";
                              },
